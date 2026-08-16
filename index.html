@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover">
+<title>JiksMail — Temporary Email</title>
+<style>
+:root{--brand:#0EA5E9;--brand-dark:#0284C7;--bg:#0B1220;--bg2:#111B2F}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:#0B1220;color:#fff;line-height:1.5;overflow:hidden}
+body.light{background:#F5FAFF;color:#0f172a}
+#app{height:100dvh;display:flex;flex-direction:column;max-width:440px;margin:0 auto;position:relative;overflow:hidden}
+.header{padding:20px 16px 0;position:relative;z-index:10}
+.header-top{display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:40px;height:40px;position:relative}
+.logo .env{position:absolute;inset:0;border:2px solid #0EA5E9;background:#0B1220;border-radius:10px}
+body.light .logo .env{background:#fff}
+.logo .flap{position:absolute;top:0;left:0;width:100%;height:11px;background:#0EA5E9;border-radius:4px 4px 0 0;transform-origin:top;animation:flap 2.8s ease-in-out infinite}
+.logo .checkmark{position:absolute;right:-5px;top:-5px;width:14px;height:14px;background:#fff;border:1.5px solid #0EA5E9;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.2);animation:pop 2.8s ease-in-out infinite;color:#0EA5E9}
+.logo .checkmark svg{width:10px;height:10px}
+@keyframes flap{0%,100%{transform:rotateX(0)}50%{transform:rotateX(-60deg)}}
+@keyframes pop{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+.brand-txt h1{font-size:20px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.brand-txt p{font-size:11px;font-weight:500;opacity:.9;letter-spacing:.05em;margin-top:2px}
+.theme-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);backdrop-filter:blur(8px);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+.stat{background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:12px;min-width:0}
+.stat .lbl{font-size:10px;letter-spacing:.1em;font-weight:700;opacity:.8;text-transform:uppercase}
+.stat .val{font-size:18px;font-weight:800;margin-top:4px;line-height:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stat .sub{font-size:11px;opacity:.8;margin-top:4px}
+.stat.accent{background:#fff;color:#0EA5E9;box-shadow:0 8px 20px rgba(0,0,0,.12)}
+.stat.accent .lbl,.stat.accent .sub{opacity:.7}
+.content{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px;padding-bottom:90px;-webkit-overflow-scrolling:touch}
+.content::-webkit-scrollbar{display:none}
+.card{background:#111B2F;border:1px solid #1e293b;border-radius:18px}
+body.light .card{background:#fff;border-color:#f1f5f9}
+.address-card{background:#111B2F;border:1px solid #1e293b;border-radius:20px;padding:20px;box-shadow:0 12px 32px rgba(14,165,233,.1);position:relative;overflow:hidden}
+body.light .address-card{background:#fff;border-color:#f1f5f9}
+.badge{display:inline-block;padding:4px 12px;border-radius:9999px;font-size:11px;font-weight:700;letter-spacing:.1em;background:#0B1220;color:#7dd3fc;border:1px solid #1e293b}
+body.light .badge{background:#f0f9ff;color:#0EA5E9;border-color:#e0f2fe}
+.email-addr{font-size:15px;font-weight:600;word-break:break-all;line-height:1.35;text-align:center;margin-top:14px;padding:0 4px;user-select:all}
+.email-addr.dim{opacity:.4}
+.hint{font-size:11px;line-height:1.5;text-align:center;margin-top:12px;color:#94a3b8}
+.section-label{font-size:11px;font-weight:600;letter-spacing:.1em;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;margin-top:16px}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:10px 14px;border-radius:9999px;font-size:12px;font-weight:500;border:1px solid #334155;background:transparent;color:#cbd5e1;cursor:pointer;transition:all .15s}
+body.light .chip{color:#64748b;border-color:#e2e8f0}
+.chip.active{background:#0EA5E9;color:#fff;border-color:#0EA5E9}
+.small-link{font-size:11px;font-weight:600;color:#0EA5E9;border:1px solid rgba(14,165,233,.3);background:#fff;border-radius:9999px;padding:4px 10px;text-decoration:none;cursor:pointer}
+.small-link:hover{background:#0EA5E9;color:#fff}
+.notice{background:#111B2F;border:1px solid #1e293b;border-radius:12px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+body.light .notice{background:#f0f9ff;border-color:#e0f2fe}
+.notice a{font-size:11px;font-weight:500;color:#7dd3fc;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.light .notice a{color:#0EA5E9}
+.actions{display:flex;gap:8px;margin-top:16px}
+.actions .btn{flex:1;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:13px;cursor:pointer;transition:all .15s}
+.actions .btn svg{width:16px;height:16px}
+.btn-copy{background:#0EA5E9;color:#fff;border:none;box-shadow:0 8px 20px rgba(14,165,233,.3)}
+.btn-copy:active{transform:scale(.95)}
+.btn-new{background:transparent;color:#0EA5E9;border:1.5px solid #0EA5E9}
+.btn-new:active{transform:scale(.95)}
+.msg{width:100%;text-align:left;background:#111B2F;border:1px solid #1e293b;border-radius:18px;padding:16px;cursor:pointer;transition:all .15s;margin-bottom:10px}
+body.light .msg{background:#fff;border:1px solid #f1f5f9}
+.msg:active{transform:scale(.99)}
+.msg:hover{box-shadow:0 8px 24px rgba(0,0,0,.06)}
+.msg-top{display:flex;gap:12px}
+.avatar{width:40px;height:40px;border-radius:50%;background:#0EA5E9;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+.msg-body{flex:1;min-width:0}
+.msg-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.from-name{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.time{font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:4px;flex-shrink:0}
+.from-addr{font-size:12px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.subject{font-size:14px;font-weight:500;margin-top:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.preview{font-size:12px;color:#94a3b8;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4}
+body.light .subject{color:#0f172a}
+.empty{text-align:center;padding:40px 20px}
+.empty .ico{font-size:40px;margin-bottom:12px;opacity:.5}
+.empty p{color:#94a3b8;font-size:13px}
+.nav{position:fixed;bottom:0;left:0;right:0;margin:0 auto;width:100%;max-width:440px;height:76px;border-top:1px solid #1e293b;display:flex;align-items:center;justify-content:space-around;padding:0 8px;backdrop-filter:blur(24px);z-index:20;background:rgba(17,27,47,.95);padding-bottom:env(safe-area-inset-bottom)}
+body.light .nav{background:rgba(255,255,255,.95);border-color:#f1f5f9}
+.nav-btn{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:64px;padding:4px 0;background:none;border:none;cursor:pointer;color:#64748b}
+.nav-btn svg{width:20px;height:20px}
+.nav-btn .lbl{font-size:11px;font-weight:500;letter-spacing:.025em}
+.nav-btn.active{color:#0EA5E9}
+.nav-btn.active .lbl{font-weight:600}
+.nav-badge{position:absolute;top:-2px;right:0;min-width:16px;height:16px;padding:0 4px;background:#0EA5E9;color:#fff;font-size:10px;font-weight:700;border-radius:9999px;display:flex;align-items:center;justify-content:center;line-height:1;border:2px solid #111B2F}
+body.light .nav-badge{border-color:#fff}
+.dot-ind{position:absolute;bottom:-4px;width:4px;height:4px;border-radius:50%;background:#0EA5E9}
+.rowlist{background:#111B2F;border:1px solid #1e293b;border-radius:16px;overflow:hidden}
+body.light .rowlist{background:#fff;border-color:#f1f5f9}
+.row{width:100%;display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px;background:none;cursor:pointer;border-bottom:1px solid #1e293b}
+body.light .row{border-bottom-color:#f1f5f9}
+.row:last-child{border-bottom:none}
+.row-left{display:flex;align-items:center;gap:12px}
+.row-ico{width:32px;height:32px;border-radius:50%;background:#1e293b;display:flex;align-items:center;justify-content:center;color:#0EA5E9}
+body.light .row-ico{background:#f0f9ff}
+.row-ico svg{width:16px;height:16px}
+.row .lbl{font-size:13px;font-weight:500;color:#fff;text-align:left}
+body.light .row .lbl{color:#0f172a}
+.row .sub{font-size:11px;color:#94a3b8}
+.row .chev{color:#94a3b8}
+.toggle{width:44px;height:26px;border-radius:9999px;padding:3px;transition:all .15s;display:flex;border:none;cursor:pointer}
+.toggle.on{background:#0EA5E9;justify-content:flex-end}
+.toggle.off{background:#cbd5e1;justify-content:flex-start}
+.toggle .knob{width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+#toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);background:#0EA5E9;color:#fff;padding:10px 18px;border-radius:9999px;font-size:13px;font-weight:600;z-index:100;transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:0 8px 24px rgba(14,165,233,.4);white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
+#toast.show{transform:translateX(-50%) translateY(0)}
+.overlay{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.4);backdrop-filter:blur(2px);display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:640px){.overlay{align-items:center;padding:16px}}
+.modal{width:100%;max-width:440px;max-height:86%;background:#0B1220;border-radius:24px 24px 0 0;padding:20px;overflow-y:auto;animation:slideUp .25s ease}
+body.light .modal{background:#fff;border-radius:24px}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:4px;word-break:break-word}
+.modal .meta{font-size:12px;color:#94a3b8;margin-bottom:16px}
+.modal .email-body{font-size:14px;line-height:1.6;word-break:break-word}
+.modal .email-body img{max-width:100%}
+.modal .email-body a{color:#0EA5E9}
+.close-btn{margin-top:16px;width:100%;height:46px;border-radius:14px;background:#0EA5E9;color:#fff;font-weight:600;font-size:13px;border:none;cursor:pointer}
+.attach{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid #1e293b;border-radius:12px;margin-top:12px;color:#7dd3fc;text-decoration:none;font-size:13px}
+body.light .attach{border-color:#f1f5f9;color:#0EA5E9}
+.spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}
+body.light .spinner{border-color:rgba(14,165,233,.3);border-top-color:#0EA5E9}
+@keyframes spin{to{transform:rotate(360deg)}}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;margin-right:5px;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:9999px;font-size:11px;font-weight:600;background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.25)}
+.flex-between{display:flex;align-items:center;justify-content:space-between}
+.techgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.techbox{border-radius:12px;padding:12px;border:1px solid}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+
+<script>
+const {useState, useEffect, useCallback, useRef} = React;
+
+/* ============ REAL BACKEND ============ */
+// Two real providers:
+//  1) temp.tf — disposable aliases on Gmail / Outlook / Hotmail / high.edu.pl
+//  2) mail.tm  — independent disposable inboxes (@emalupe.com etc.)
+// All calls go through our own Netlify proxy (same origin → no CORS issue).
+const MAILTM  = "https://api.mail.tm";
+const TEMPTF  = "https://temp.tf";
+const H = { "Accept":"application/json", "Content-Type":"application/json" };
+// temp.tf provider domains (what users can pick)
+const TF_DOMAINS = [
+  { id:"gmail",       label:"Gmail",    domain:"gmail.com" },
+  { id:"outlook",     label:"Outlook",  domain:"outlook.com" },
+  { id:"hotmail",     label:"Hotmail",  domain:"hotmail.com" },
+  { id:"high.edu.pl", label:"high.edu.pl", domain:"high.edu.pl" },
+];
+// Primary path: our own Netlify serverless proxy (/.netlify/functions/proxy)
+// Fallback: direct (if CORS allows) + public proxies (for running the file standalone)
+const PROXIES = ["/.netlify/functions/proxy", "https://cors.eu.org/", "https://api.allorigins.win/raw?url="];
+
+// unified fetch:
+//  1) our Netlify function proxy first (reliable, no CORS, no timeout)
+//  2) direct attempt
+//  3) public CORS proxies (for standalone use)
+async function proxiedFetch(url, opts){
+  opts = opts || {};
+  const method = (opts.method || "GET").toUpperCase();
+  let lastErr = null;
+
+  const abortedFetch = async (u, o, ms) => {
+    const c = new AbortController();
+    const t = setTimeout(()=> c.abort(), ms);
+    try { return await fetch(u, Object.assign({}, o, { signal: c.signal })); }
+    finally { clearTimeout(t); }
+  };
+
+  const parseResp = async (r) => {
+    const tx = await r.text();
+    if(tx.trim().startsWith("<!DOCTYPE")||tx.trim().toLowerCase().startsWith("<html")) throw new Error("html");
+    return JSON.parse(tx || "{}");
+  };
+
+  // 1) Netlify function proxy (same origin — most reliable)
+  try {
+    const proxyUrl = "/.netlify/functions/proxy?target=" + encodeURIComponent(url);
+    const r = await abortedFetch(proxyUrl, { method, headers: opts.headers, body: opts.body }, 25000);
+    if(r.ok){
+      const j = await r.json();
+      return { ok:true, json: (j && j.data !== undefined) ? j.data : j };
+    }
+  } catch(e){ lastErr = e; }
+
+  // 2) direct attempt
+  try {
+    const r = await abortedFetch(url, Object.assign({}, opts, { signal: undefined }), 15000);
+    if(!r.ok) throw new Error("http "+r.status);
+    return { ok:true, json: await parseResp(r) };
+  } catch(e){ lastErr = e; }
+
+  // 3) public CORS proxies
+  for(const p of PROXIES.slice(1)){
+    try {
+      const target = p + url;
+      const r = await abortedFetch(target, Object.assign({}, opts, { signal: undefined }), 20000);
+      if(!r.ok) continue;
+      return { ok:true, json: await parseResp(r) };
+    } catch(e){ lastErr = e; }
+  }
+  throw lastErr || new Error("network failed");
+}
+
+async function mtDomains(){
+  const r = await proxiedFetch(MAILTM+"/domains",{headers:H});
+  const j = r.json;
+  const arr = Array.isArray(j) ? j : (j["hydra:member"]||j["member"]||[]);
+  const list = arr.filter(d=>d && d.isActive).map(d=>d.domain).filter(Boolean);
+  return list.length ? list : ["emalupe.com"];
+}
+async function mtCreate(address,password){
+  const r = await proxiedFetch(MAILTM+"/accounts",{method:"POST",headers:H,body:JSON.stringify({address,password})});
+  const j = r.json;
+  if(j && (j["@type"]==="ConstraintViolationList" || j.violations || j.code || j.status>=400 || (j.message && !j.address))) throw new Error("create failed");
+  return j;
+}
+async function mtToken(address,password){
+  const r = await proxiedFetch(MAILTM+"/token",{method:"POST",headers:H,body:JSON.stringify({address,password})});
+  const j = r.json;
+  if(!j.token) throw new Error("no token");
+  return j.token;
+}
+async function mtMessages(token){
+  const r = await proxiedFetch(MAILTM+"/messages",{headers:{...H,"Authorization":"Bearer "+token}});
+  const j = r.json;
+  const arr = Array.isArray(j) ? j : (j["hydra:member"]||j["member"]||[]);
+  return arr.map(m=>({
+    id:m.id,
+    from:(m.from && (m.from.address||m.from))||"unknown",
+    fromName:(m.from && m.from.name)||null,
+    subject:m.subject||"(no subject)",
+    intro:m.intro||"",
+    text:m.text||"",
+    html:(m.html && m.html.length)?m.html[0]:"",
+    createdAt:m.createdAt,
+    attachments:m.attachments||[],
+    seen:m.seen
+  }));
+}
+
+// ---- temp.tf helpers ----
+// generate: GET /api/account?providers=<id>&plus=1&dot=(gmail dot)
+//   returns { email } — a real disposable alias on the chosen provider
+async function tfGenerate(providerId){
+  let dot = "0", plus = "1";
+  if(providerId === "gmail"){ dot = "1"; }        // gmail supports dot-aliases
+  const q = "providers=" + encodeURIComponent(providerId) + "&dot=" + dot + "&plus=" + plus;
+  const r = await proxiedFetch(TEMPTF+"/api/account?" + q, { headers: H });
+  const j = r.json;
+  const email = (typeof j.email === "string") ? j.email.trim().toLowerCase() : "";
+  if(!email) throw new Error("provider pool empty");
+  return email;
+}
+// inbox: POST /api/check { email } → { data:[messages], totalReceived }
+async function tfInbox(email){
+  const r = await proxiedFetch(TEMPTF+"/api/check", { method:"POST", headers: H, body: JSON.stringify({ email }) });
+  const j = r.json;
+  const arr = (Array.isArray(j.data) ? j.data : []);
+  return arr.map((m, i) => ({
+    id: m.id || (email + "-" + i),
+    from: m.from || m.sender || "unknown",
+    fromName: m.fromName || m.senderName || (m.from ? m.from.split("@")[0] : "unknown"),
+    subject: m.subject || "(no subject)",
+    intro: m.preview || m.intro || "",
+    text: m.text || m.body || "",
+    html: m.html || "",
+    createdAt: m.date || m.createdAt || Date.now(),
+    attachments: m.attachments || []
+  }));
+}
+
+/* ============ STORAGE ============ */
+const LSK = "jiksmail_v2";
+function persist(s){ try{ localStorage.setItem(LSK, JSON.stringify(s)); }catch(e){} }
+function restore(){ try{ const r=localStorage.getItem(LSK); return r?JSON.parse(r):null; }catch(e){ return null; } }
+
+/* ============ UTILS ============ */
+function rnd(n){ const c="abcdefghijklmnopqrstuvwxyz0123456789"; let s=""; for(let i=0;i<n;i++) s+=c[Math.floor(Math.random()*c.length)]; return s; }
+function tAgo(iso){ try{ const d=new Date(iso); const m=Math.floor((Date.now()-d.getTime())/60000); if(m<1)return "now"; if(m<60)return m+"m"; const h=Math.floor(m/60); if(h<24)return h+"h"; return Math.floor(h/24)+"d"; }catch(e){ return ""; } }
+function friendlyErr(e, prefix){
+  const m = (e && e.message) ? String(e.message) : "";
+  if(/abort/i.test(m)) return "Network timeout — check connection & retry";
+  if(/failed to fetch|network|fetch/i.test(m)) return "Can't reach email service — retry in a moment";
+  return (m && m.length) ? (prefix + ": " + m.slice(0,60)) : prefix;
+}
+
+/* ============ ICONS ============ */
+function I(paths){ return function(p){ return React.createElement("svg",Object.assign({viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"},p), paths.map((d,i)=>React.createElement("path",{key:i,d:d}))); }; }
+const icons = {
+  mail: I(["M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z","m22 6-10 7L2 6"]),
+  inbox: I(["M22 12h-6l-2 3h-4l-2-3H2","M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"]),
+  switchI: I(["M17 1l4 4-4 4","M3 11V9a4 4 0 0 1 4-4h14","M7 23l-4-4 4-4","M21 13v2a4 4 0 0 1-4 4H3"]),
+  other: I(["M12 12h.01","M19 12h.01","M5 12h.01"]),
+  copy: I(["M9 9h11a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z","M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"]),
+  refresh: I(["M23 4v6h-6","M20.49 15a9 9 0 1 1-2.12-9.36L23 10"]),
+  plus: I(["M12 5v14","M5 12h14"]),
+  sun: I(["M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z","M12 1v2","M12 21v2","M4.22 4.22l1.42 1.42","M18.36 18.36l1.42 1.42","M1 12h2","M21 12h2","M4.22 19.78l1.42-1.42","M18.36 5.64l1.42-1.42"]),
+  moon: I(["M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"]),
+  chev: I(["M9 18l6-6-6-6"]),
+  check: I(["M20 6 9 17l-5-5"]),
+  download: I(["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4","M7 10l5 5 5-5","M12 15V3"]),
+  shield: I(["M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"]),
+  globe: I(["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z","M2 12h20","M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"]),
+  bell: I(["M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9","M13.73 21a2 2 0 0 1-3.46 0"]),
+  info: I(["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z","M12 16v-4","M12 8h.01"]),
+};
+
+function App(){
+  const [theme, setTheme] = useState(()=> (restore()&&restore().theme) || "dark");
+  const [tab, setTab] = useState("email");
+  const [boxes, setBoxes] = useState([]);
+  const [current, setCurrent] = useState(null); // {address,password,token,provider,login,domain}
+  const [loading, setLoading] = useState(false);
+  const [msgs, setMsgs] = useState([]);
+  const [viewing, setViewing] = useState(null);
+  const [provider, setProvider] = useState("mailtm");
+  const [tfDomain, setTfDomain] = useState("gmail");   // which temp.tf provider domain
+  const [notify, setNotify] = useState(true);
+  const toastTimer = useRef(null);
+
+  const dark = theme === "dark";
+
+  useEffect(()=>{ document.body.classList.toggle("light", !dark); }, [dark]);
+  useEffect(()=>{ persist({theme, boxes, current}); }, [theme, boxes, current]);
+
+  const toast = useCallback((msg)=>{
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(()=> el.classList.remove("show"), 2400);
+  },[]);
+
+  // restore
+  useEffect(()=>{
+    const s = restore();
+    if(s && s.boxes && s.boxes.length){
+      setBoxes(s.boxes);
+      if(s.current) setCurrent(s.current);
+    }
+  },[]);
+
+  const doFetch = useCallback(async (box)=>{
+    try{
+      if(box.provider === "mailtm"){
+        if(!box.token){
+          box.token = await mtToken(box.address, box.password);
+          setCurrent({...box});
+        }
+        const list = await mtMessages(box.token);
+        setMsgs(list);
+        setBoxes(prev => prev.map(b => b.address===box.address ? {...b, msgs: list} : b));
+        return;
+      }
+      if(box.provider === "temp.tf"){
+        const list = await tfInbox(box.address);
+        setMsgs(list);
+        setBoxes(prev => prev.map(b => b.address===box.address ? {...b, msgs: list} : b));
+        return;
+      }
+    }catch(e){
+      toast(friendlyErr(e, "Refresh failed"));
+    }
+  },[toast]);
+
+  useEffect(()=>{
+    if(!current || tab!=="inbox") return;
+    doFetch(current);
+    const iv = setInterval(()=> doFetch(current), 15000);
+    return ()=> clearInterval(iv);
+  }, [tab, current, doFetch]);
+
+  const generate = useCallback(async ()=>{
+    setLoading(true);
+    try{
+      let box;
+      if(provider === "mailtm"){
+        const domains = await mtDomains();
+        const domain = domains[Math.floor(Math.random()*domains.length)];
+        const address = rnd(8)+"@"+domain;
+        const password = rnd(12)+"A1!";
+        await mtCreate(address, password);
+        let token = null;
+        try { token = await mtToken(address, password); } catch(e){}
+        box = { address, password, token, provider:"mailtm", createdAt: Date.now(), msgs:[] };
+      } else {
+        // temp.tf — real Gmail/Outlook/Hotmail/edu alias
+        const address = await tfGenerate(tfDomain);
+        box = { address, provider:"temp.tf", tfDomain, createdAt: Date.now(), msgs:[] };
+      }
+      setBoxes(prev => [box, ...prev].slice(0,20));
+      setCurrent(box);
+      setMsgs([]);
+      setTab("email");
+      toast("New address generated ✓");
+    }catch(e){
+      toast(friendlyErr(e, "Generation failed"));
+    }finally{
+      setLoading(false);
+    }
+  },[provider, tfDomain, toast]);
+
+  const copyAddr = useCallback(()=>{
+    if(!current) return;
+    if(navigator.clipboard) navigator.clipboard.writeText(current.address).catch(()=>{});
+    else {
+      const ta = document.createElement("textarea");
+      ta.value = current.address; document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); document.body.removeChild(ta);
+    }
+    toast("Copied to clipboard ✓");
+  },[current, toast]);
+
+  const totalMsgs = boxes.reduce((a,b)=> a + ((b.msgs && b.msgs.length)||0), 0);
+  const activeCount = boxes.length;
+
+  return React.createElement("div", {id:"app"}, [
+    // ===== HEADER =====
+    React.createElement("div", {className:"header", key:"h"}, 
+      React.createElement("div", {className:"header-top"},
+        React.createElement("div", {className:"brand"},
+          React.createElement("div", {className:"logo"},
+            React.createElement("div", {className:"env"}),
+            React.createElement("div", {className:"flap"}),
+            React.createElement("div", {className:"checkmark"}, React.createElement(icons.check, {width:10,height:10}))
+          ),
+          React.createElement("div", {className:"brand-txt"},
+            React.createElement("h1", {}, "JiksMail"),
+            React.createElement("p", {}, "TEMP MAIL")
+          )
+        ),
+        React.createElement("button", {className:"theme-btn", onClick:()=>setTheme(dark?"light":"dark")},
+          React.createElement(dark?icons.sun:icons.moon, {width:18,height:18})
+        )
+      ),
+      React.createElement("div", {className:"stats"},
+        React.createElement("div", {className:"stat"},
+          React.createElement("div", {className:"lbl"}, "TOTAL RECEIVED"),
+          React.createElement("div", {className:"val"}, totalMsgs.toLocaleString()),
+          React.createElement("div", {className:"sub"}, "messages")
+        ),
+        React.createElement("div", {className:"stat accent"},
+          React.createElement("div", {className:"lbl"}, "AVAILABLE"),
+          React.createElement("div", {className:"val"}, (activeCount).toLocaleString()),
+          React.createElement("div", {className:"sub"}, "mailboxes")
+        )
+      )
+    ),
+    // ===== CONTENT =====
+    React.createElement("div", {className:"content", key:"c"},
+      tab === "email" && React.createElement("div", {key:"email"},
+        React.createElement("div", {className:"notice"},
+          React.createElement("a", {href:"#"}, React.createElement("span",{className:"live-dot"}), "Live • Real inbox via mail.tm / temp.tf"),
+          React.createElement("a", {className:"small-link", href: current && current.address ? ("mailto:"+current.address) : "#", onClick:(e)=>e.stopPropagation()}, "Open")
+        ),
+        React.createElement("div", {className:"address-card"},
+          React.createElement("div", {style:{display:"flex",justifyContent:"center"}},
+            React.createElement("span", {className:"badge"}, "RANDOM")
+          ),
+          React.createElement("div", {className:"email-addr" + (loading?" dim":"")},
+            current ? current.address : (loading ? "generating..." : "Tap generate to create an address")
+          ),
+          React.createElement("p", {className:"hint"},
+            current
+              ? (current.provider==="temp.tf" ? "Real " + (current.tfDomain||"provider") + " alias via temp.tf. Receive email instantly." : "Real mailbox on mail.tm. Receive email instantly, no expiry.")
+              : "Generate a real temporary email address — messages actually arrive."
+          )
+        ),
+        React.createElement("div", {className:"actions"},
+          React.createElement("button", {className:"btn btn-copy", onClick:copyAddr, disabled:loading}, React.createElement(icons.copy), "Copy"),
+          React.createElement("button", {className:"btn btn-new", onClick:generate, disabled:loading},
+            loading ? React.createElement("span",{className:"spinner"}) : React.createElement(icons.plus), "New")
+        ),
+        React.createElement("p", {className:"section-label"}, "Service"),
+        React.createElement("div", {className:"chip-row"},
+          React.createElement("button", {className:"chip"+(provider==="temp.tf"?" active":""), onClick:()=>setProvider("temp.tf")}, "temp.tf (Gmail/Outlook)"),
+          React.createElement("button", {className:"chip"+(provider==="mailtm"?" active":""), onClick:()=>setProvider("mailtm")}, "mail.tm")
+        ),
+        provider === "temp.tf" && React.createElement("div", {key:"tfdom"},
+          React.createElement("p", {className:"section-label"}, "Provider domain"),
+          React.createElement("div", {className:"chip-row"},
+            TF_DOMAINS.map((d)=> React.createElement("button", {key:d.id, className:"chip"+(tfDomain===d.id?" active":""), onClick:()=>setTfDomain(d.id)}, d.label))
+          )
+        ),
+        React.createElement("div", {className:"card", style:{padding:14, marginTop:16}},
+          React.createElement("div", {className:"flex-between"},
+            React.createElement("div", {},
+              React.createElement("div", {style:{fontSize:12,fontWeight:600}}, "Status"),
+              React.createElement("div", {style:{fontSize:11,color:"#94a3b8",marginTop:2}}, "Backend connected")
+            ),
+            React.createElement("span", {className:"status-pill"}, React.createElement("span",{className:"live-dot"}), "ONLINE")
+          )
+        )
+      ),
+      tab === "inbox" && React.createElement("div", {key:"inbox"},
+        React.createElement("div", {className:"flex-between", style:{marginBottom:12}},
+          React.createElement("h2", {style:{fontSize:18,fontWeight:700}}, "Inbox"),
+          React.createElement("button", {className:"btn-copy", style:{border:"none",display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:14,cursor:"pointer",fontSize:13,fontWeight:600},
+            onClick:()=> current && doFetch(current)},
+            React.createElement(icons.refresh,{width:16,height:16}), "Fetch")
+        ),
+        msgs.length === 0
+          ? React.createElement("div", {className:"empty"},
+              React.createElement("div", {className:"ico"}, "📭"),
+              React.createElement("p", {}, current ? "No messages yet — send an email to your address and tap Fetch." : "Generate an address first.")
+            )
+          : msgs.map((m)=> React.createElement("button", {key:m.id, className:"msg", onClick:()=>{
+              setViewing(m);
+            }},
+            React.createElement("div", {className:"msg-top"},
+              React.createElement("div", {className:"avatar"}, (m.fromName||m.from||"?")[0].toUpperCase()),
+              React.createElement("div", {className:"msg-body"},
+                React.createElement("div", {className:"msg-row"},
+                  React.createElement("span", {className:"from-name"}, m.fromName || m.from),
+                  React.createElement("span", {className:"time"}, tAgo(m.createdAt))
+                ),
+                React.createElement("div", {className:"from-addr"}, m.from),
+                React.createElement("div", {className:"subject"}, m.subject),
+                React.createElement("div", {className:"preview"}, m.intro || m.text || m.body || "Tap to read")
+              )
+            )
+          ))
+      ),
+      tab === "switch" && React.createElement("div", {key:"switch"},
+        React.createElement("h2", {style:{fontSize:18,fontWeight:700}}, "Switch Email"),
+        React.createElement("p", {style:{fontSize:12,color:"#94a3b8",marginTop:4}}, "Your generated addresses"),
+        React.createElement("div", {style:{marginTop:20,display:"flex",flexDirection:"column",gap:10}},
+          boxes.length===0 && React.createElement("p", {style:{color:"#94a3b8",fontSize:13}}, "No mailboxes yet."),
+          boxes.map((b)=> {
+            const active = current && current.address===b.address;
+            return React.createElement("button", {key:b.address, className:"msg", onClick:()=>{ setCurrent(b); setMsgs(b.msgs||[]); setTab("email"); toast("Switched"); }, style: active?{borderColor:"#0EA5E9"}:{}},
+              React.createElement("div", {style:{display:"flex",alignItems:"center",justifyContent:"space-between"}},
+                React.createElement("div", {style:{minWidth:0}},
+                  React.createElement("div", {style:{fontSize:13,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:active?"#0EA5E9":undefined},className:""}, b.address),
+                  React.createElement("div", {style:{fontSize:11,color:"#94a3b8",marginTop:4}}, (b.msgs&&b.msgs.length||0)+" msgs • "+b.provider)
+                ),
+                React.createElement("div", {style:{color:active?"#0EA5E9":"#94a3b8"}}, React.createElement(icons.chev,{}))
+              )
+            );
+          })
+        ),
+        React.createElement("button", {className:"btn-copy", style:{border:"none",width:"100%",height:48,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontWeight:600,fontSize:13,cursor:"pointer",marginTop:16},
+          onClick:generate},
+          React.createElement(icons.plus,{width:16,height:16}), " Generate Another")
+      ),
+      tab === "other" && React.createElement("div", {key:"other"},
+        React.createElement("div", {className:"card", style:{padding:20}},
+          React.createElement("div", {style:{display:"flex",alignItems:"center",gap:12}},
+            React.createElement("div", {style:{width:48,height:48,borderRadius:"50%",background:"#0EA5E9",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:18}}, "J"),
+            React.createElement("div", {},
+              React.createElement("div", {style:{fontSize:15,fontWeight:700}}, "JiksMail"),
+              React.createElement("div", {style:{fontSize:12,color:"#94a3b8"}}, "Real temporary email • Instant delivery")
+            )
+          ),
+          React.createElement("div", {className:"techgrid"},
+            React.createElement("div", {className:"techbox", style:{background:"rgba(14,165,233,.08)",borderColor:"rgba(14,165,233,.3)"}},
+              React.createElement("div", {style:{fontSize:11,fontWeight:700,letterSpacing:".1em",color:"#0EA5E9"}}, "TECH"),
+              React.createElement("div", {style:{fontSize:12,fontWeight:500,marginTop:4,color:dark?"#e2e8f0":"#334155"}}, "temp.tf + mail.tm")
+            ),
+            React.createElement("div", {className:"techbox", style:{background:"rgba(100,116,139,.1)",borderColor:"rgba(100,116,139,.3)"}},
+              React.createElement("div", {style:{fontSize:11,fontWeight:700,letterSpacing:".1em",color:"#94a3b8"}}, "STATUS"),
+              React.createElement("div", {style:{fontSize:12,fontWeight:500,marginTop:4,color:dark?"#e2e8f0":"#334155"}}, "Working backend")
+            )
+          )
+        ),
+        React.createElement("p", {className:"section-label"}, "Preferences"),
+        React.createElement("div", {className:"rowlist"},
+          React.createElement("div", {className:"row"},
+            React.createElement("div", {className:"row-left"},
+              React.createElement("div", {className:"row-ico"}, React.createElement(icons.moon,{})),
+              React.createElement("div", {}, React.createElement("div",{className:"lbl"},"Dark Mode"), React.createElement("div",{className:"sub"}, dark?"On":"Off"))
+            ),
+            React.createElement("button", {className:"toggle "+(dark?"on":"off"), onClick:()=>setTheme(dark?"light":"dark")},
+              React.createElement("div",{className:"knob"}))
+          ),
+          React.createElement("button", {className:"row", onClick:()=>toast("Language: English")},
+            React.createElement("div", {className:"row-left"},
+              React.createElement("div", {className:"row-ico"}, React.createElement(icons.globe,{})),
+              React.createElement("div", {},
+                React.createElement("div",{className:"lbl"},"App Language"),
+                React.createElement("div",{className:"sub"},"English"))
+            ),
+            React.createElement("span",{className:"chev"}, React.createElement(icons.chev,{}))
+          ),
+          React.createElement("div", {className:"row"},
+            React.createElement("div", {className:"row-left"},
+              React.createElement("div", {className:"row-ico"}, React.createElement(icons.bell,{})),
+              React.createElement("div", {}, React.createElement("div",{className:"lbl"},"Notifications"), React.createElement("div",{className:"sub"}, notify?"On":"Off"))
+            ),
+            React.createElement("button", {className:"toggle "+(notify?"on":"off"), onClick:()=>setNotify(!notify)},
+              React.createElement("div",{className:"knob"}))
+          )
+        ),
+        React.createElement("p", {className:"section-label"}, "About"),
+        React.createElement("div", {className:"rowlist"},
+          React.createElement("button", {className:"row", onClick:()=>toast("Privacy Policy")},
+            React.createElement("div", {className:"row-left"},
+              React.createElement("div", {className:"row-ico"}, React.createElement(icons.shield,{})),
+              React.createElement("div",{className:"lbl"},"Privacy Policy")),
+            React.createElement("span",{className:"chev"}, React.createElement(icons.chev,{}))
+          ),
+          React.createElement("button", {className:"row", onClick:()=>toast("Terms of Service")},
+            React.createElement("div", {className:"row-left"},
+              React.createElement("div", {className:"row-ico"}, React.createElement(icons.info,{})),
+              React.createElement("div",{className:"lbl"},"Terms of Service")),
+            React.createElement("span",{className:"chev"}, React.createElement(icons.chev,{}))
+          ),
+          React.createElement("button", {className:"row", onClick:()=>toast("Report & Contact")},
+            React.createElement("div", {className:"row-left"},
+              React.createElement("div", {className:"row-ico"}, React.createElement(icons.info,{})),
+              React.createElement("div",{className:"lbl"},"Report & Contact")),
+            React.createElement("span",{className:"chev"}, React.createElement(icons.chev,{}))
+          ),
+          React.createElement("button", {className:"row", onClick:()=>toast("jiksmail.app")},
+            React.createElement("div", {className:"row-left"},
+              React.createElement("div", {className:"row-ico"}, React.createElement(icons.globe,{})),
+              React.createElement("div", {}, React.createElement("div",{className:"lbl"},"Website"), React.createElement("div",{className:"sub"},"jiksmail.app"))),
+            React.createElement("span",{className:"chev"}, React.createElement(icons.chev,{}))
+          )
+        ),
+        React.createElement("div", {style:{textAlign:"center",padding:"20px 0",fontSize:11,color:"#94a3b8",letterSpacing:".08em"}},
+          "JiksMail • v3.0 • temp.tf + mail.tm backend"
+        )
+      )
+    ),
+    // ===== BOTTOM NAV =====
+    React.createElement("div", {className:"nav", key:"nav"},
+      [
+        {id:"email", label:"Email", icon:icons.mail},
+        {id:"inbox", label:"Inbox", icon:icons.inbox, badge: msgs.length},
+        {id:"switch", label:"Switch", icon:icons.switchI},
+        {id:"other", label:"Other", icon:icons.other},
+      ].map((n)=> React.createElement("button", {key:n.id, className:"nav-btn"+(tab===n.id?" active":""), onClick:()=>setTab(n.id)},
+        React.createElement("span", {style:{position:"relative",display:"flex"}},
+          React.createElement(n.icon, {}),
+          n.badge !== undefined && n.badge > 0 && React.createElement("span", {className:"nav-badge"}, n.badge)
+        ),
+        React.createElement("span", {className:"lbl"}, n.label),
+        tab===n.id && React.createElement("span", {className:"dot-ind"})
+      ))
+    ),
+    // ===== MESSAGE MODAL =====
+    viewing && React.createElement("div", {className:"overlay", key:"ov", onClick:()=>setViewing(null)},
+      React.createElement("div", {className:"modal", onClick:(e)=>e.stopPropagation()},
+        React.createElement("h3", {}, viewing.subject),
+        React.createElement("div", {className:"meta"},
+          React.createElement("div", {}, "From: "+viewing.from),
+          viewing.createdAt && React.createElement("div", {}, new Date(viewing.createdAt).toLocaleString())
+        ),
+        viewing.html
+          ? React.createElement("div", {className:"email-body", dangerouslySetInnerHTML:{__html: viewing.html}})
+          : React.createElement("div", {className:"email-body"}, viewing.text || viewing.intro || "(empty)"),
+        Array.isArray(viewing.attachments) && viewing.attachments.map((a,i)=> React.createElement("a", {key:i, className:"attach", href: a.downloadUrl || "#"},
+          React.createElement(icons.download,{width:16,height:16}), a.filename || "attachment"
+        )),
+        React.createElement("button", {className:"close-btn", onClick:()=>setViewing(null)}, "Close")
+      )
+    )
+  ]);
+}
+
+ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(App));
+</script>
+
+</body>
+</html>
